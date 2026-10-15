@@ -1,7 +1,13 @@
 package controller;
 
-import java.util.ArrayList;
+import dao.PelangganDAO;
+import dao.BarangDAO;
+import dao.PengirimanDAO;
+
+import java.sql.SQLException;
+import java.util.List;
 import java.util.Scanner;
+
 import model.Pelanggan;
 import model.Barang;
 import model.Pengiriman;
@@ -12,107 +18,62 @@ import view.Menu;
 public class PengelolaEkspedisi {
 
     private final Scanner scanner = new Scanner(System.in);
-
-    private final ArrayList<Pelanggan> daftarPelanggan = new ArrayList<>();
-    private final ArrayList<Barang> daftarBarang = new ArrayList<>();
-    private final ArrayList<Pengiriman> daftarPengiriman = new ArrayList<>();
-
     private final Menu menu = new Menu();
 
-    public PengelolaEkspedisi() {
-
-        daftarPelanggan.add(new Pelanggan(
-                "PPU1024",
-                "A",
-                "081234567890",
-                "Penajam"));
-
-        daftarBarang.add(new Barang(
-                "BRG2048",
-                "B",
-                "Elektronik",
-                2.5));
-
-        daftarPengiriman.add(new PengirimanDarat(
-                "KRM3072",
-                "PPU1024",
-                "BRG2048",
-                "Penajam",
-                "Balikpapan",
-                "Diproses",
-                "Truk"));
-    }
+    private final PelangganDAO pelangganDAO = new PelangganDAO();
+    private final BarangDAO barangDAO = new BarangDAO();
+    private final PengirimanDAO pengirimanDAO = new PengirimanDAO();
 
     public void jalankanProgram() {
-
         int pilihan = 0;
 
         do {
             menu.tampilkanMenuUtama();
 
             try {
-
                 System.out.print("Pilih Menu (1-5): ");
-                pilihan = scanner.nextInt();
-                scanner.nextLine();
-
-                if (pilihan < 1 || pilihan > 5) {
-                    System.out.println("Pilihan tidak valid!");
-                    continue;
-                }
+                pilihan = Integer.parseInt(scanner.nextLine());
 
                 switch (pilihan) {
-
                     case 1:
                         tambahData();
                         break;
-
                     case 2:
                         lihatData();
                         break;
-
                     case 3:
                         ubahData();
                         break;
-
                     case 4:
                         hapusData();
                         break;
-
                     case 5:
                         System.out.println("Program selesai.");
                         break;
+                    default:
+                        System.out.println("Pilihan tidak valid!");
                 }
-
-            } catch (Exception e) {
-
+            } catch (NumberFormatException e) {
                 System.out.println("Input harus berupa angka!");
-                scanner.nextLine();
             }
-
         } while (pilihan != 5);
 
         scanner.close();
     }
 
     void tambahData() {
-
         menu.tampilkanMenuData();
 
         try {
-
             System.out.print("Pilih Data: ");
-            int pilihan = scanner.nextInt();
-            scanner.nextLine();
+            int pilihan = Integer.parseInt(scanner.nextLine());
 
             switch (pilihan) {
-
-                case 1:
-
+                case 1: {
                     System.out.print("ID Pelanggan: ");
-                    String idPelanggan = scanner.nextLine();
+                    String id = scanner.nextLine();
 
-                    if (idPelangganSudahAda(idPelanggan)) {
+                    if (pelangganDAO.cari(id)) {
                         System.out.println("ID Pelanggan sudah digunakan!");
                         return;
                     }
@@ -121,439 +82,345 @@ public class PengelolaEkspedisi {
                     String nama = scanner.nextLine();
 
                     System.out.print("No Telepon: ");
-                    String noTelepon = scanner.nextLine();
+                    String telepon = scanner.nextLine();
 
                     System.out.print("Alamat: ");
                     String alamat = scanner.nextLine();
 
-                    daftarPelanggan.add(new Pelanggan(
-                            idPelanggan,
-                            nama,
-                            noTelepon,
-                            alamat));
-
-                    System.out.println("Data pelanggan berhasil ditambahkan.");
+                    Pelanggan p = new Pelanggan(id, nama, telepon, alamat);
+                    if (pelangganDAO.tambah(p)) {
+                        System.out.println("Data pelanggan berhasil ditambahkan.");
+                    }
                     break;
+                }
 
-                case 2:
-
+                case 2: {
                     System.out.print("ID Barang: ");
-                    String idBarang = scanner.nextLine();
+                    String id = scanner.nextLine();
 
-                    if (barangSudahAda(idBarang)) {
+                    if (barangDAO.cari(id)) {
                         System.out.println("ID Barang sudah digunakan!");
                         return;
                     }
 
                     System.out.print("Nama Barang: ");
-                    String namaBarang = scanner.nextLine();
+                    String nama = scanner.nextLine();
 
                     System.out.print("Jenis Barang: ");
-                    String jenisBarang = scanner.nextLine();
+                    String jenis = scanner.nextLine();
 
                     System.out.print("Berat (ton): ");
-                    double berat = scanner.nextDouble();
-                    scanner.nextLine();
+                    double berat = Double.parseDouble(scanner.nextLine());
 
                     if (berat <= 0) {
                         System.out.println("Berat harus lebih dari 0!");
                         return;
                     }
 
-                    daftarBarang.add(new Barang(
-                            idBarang,
-                            namaBarang,
-                            jenisBarang,
-                            berat));
-
-                    System.out.println("Data barang berhasil ditambahkan.");
+                    Barang b = new Barang(id, nama, jenis, berat);
+                    if (barangDAO.tambah(b)) {
+                        System.out.println("Data barang berhasil ditambahkan.");
+                    }
                     break;
+                }
 
-                case 3:
-
+                case 3: {
                     System.out.println("1. Pengiriman Darat");
                     System.out.println("2. Pengiriman Udara");
-
                     System.out.print("Pilih Jenis Pengiriman: ");
-                    int jenisPengiriman = scanner.nextInt();
-                    scanner.nextLine();
+                    int jenis = Integer.parseInt(scanner.nextLine());
 
-                    if (jenisPengiriman < 1 || jenisPengiriman > 2) {
+                    if (jenis < 1 || jenis > 2) {
                         System.out.println("Pilihan tidak valid!");
                         return;
                     }
 
                     System.out.print("ID Pengiriman: ");
-                    String idPengiriman = scanner.nextLine();
+                    String id = scanner.nextLine();
 
-                    if (pengirimanSudahAda(idPengiriman)) {
+                    if (pengirimanDAO.cari(id)) {
                         System.out.println("ID Pengiriman sudah digunakan!");
                         return;
                     }
 
                     System.out.print("ID Pelanggan: ");
-                    String idPelangganKirim = scanner.nextLine();
+                    String idPelanggan = scanner.nextLine();
 
-                    if (!idPelangganSudahAda(idPelangganKirim)) {
+                    if (!pelangganDAO.cari(idPelanggan)) {
                         System.out.println("ID Pelanggan tidak ditemukan!");
                         return;
                     }
 
                     System.out.print("ID Barang: ");
-                    String idBarangKirim = scanner.nextLine();
+                    String idBarang = scanner.nextLine();
 
-                    if (!barangSudahAda(idBarangKirim)) {
+                    if (!barangDAO.cari(idBarang)) {
                         System.out.println("ID Barang tidak ditemukan!");
                         return;
                     }
 
                     System.out.print("Kota Asal: ");
-                    String kotaAsal = scanner.nextLine();
+                    String asal = scanner.nextLine();
 
                     System.out.print("Kota Tujuan: ");
-                    String kotaTujuan = scanner.nextLine();
+                    String tujuan = scanner.nextLine();
 
                     System.out.print("Status Pengiriman: ");
-                    String statusPengiriman = scanner.nextLine();
+                    String status = scanner.nextLine();
 
-                    if (jenisPengiriman == 1) {
+                    Pengiriman p;
 
+                    if (jenis == 1) {
                         System.out.print("Jenis Kendaraan: ");
-                        String jenisKendaraan = scanner.nextLine();
+                        String kendaraan = scanner.nextLine();
 
-                        daftarPengiriman.add(new PengirimanDarat(
-                                idPengiriman,
-                                idPelangganKirim,
-                                idBarangKirim,
-                                kotaAsal,
-                                kotaTujuan,
-                                statusPengiriman,
-                                jenisKendaraan));
-
+                        p = new PengirimanDarat(
+                                id, idPelanggan, idBarang,
+                                asal, tujuan, status, kendaraan
+                        );
                     } else {
-
                         System.out.print("Nomor Penerbangan: ");
-                        String nomorPenerbangan = scanner.nextLine();
+                        String nomor = scanner.nextLine();
 
-                        daftarPengiriman.add(new PengirimanUdara(
-                                idPengiriman,
-                                idPelangganKirim,
-                                idBarangKirim,
-                                kotaAsal,
-                                kotaTujuan,
-                                statusPengiriman,
-                                nomorPenerbangan));
+                        p = new PengirimanUdara(
+                                id, idPelanggan, idBarang,
+                                asal, tujuan, status, nomor
+                        );
                     }
 
-                    System.out.println("Data pengiriman berhasil ditambahkan.");
+                    if (pengirimanDAO.tambah(p)) {
+                        System.out.println("Data pengiriman berhasil ditambahkan.");
+                    }
                     break;
+                }
 
                 default:
                     System.out.println("Pilihan tidak tersedia.");
             }
 
-        } catch (Exception e) {
-
-            System.out.println("Input tidak valid!");
-            scanner.nextLine();
+        } catch (NumberFormatException e) {
+            System.out.println("Input angka tidak valid!");
+        } catch (SQLException e) {
+            System.out.println("Gagal menyimpan data: " + e.getMessage());
         }
     }
 
     void lihatData() {
-
         menu.tampilkanMenuData();
 
         try {
-
             System.out.print("Pilih Data: ");
-            int pilihan = scanner.nextInt();
-            scanner.nextLine();
+            int pilihan = Integer.parseInt(scanner.nextLine());
 
             switch (pilihan) {
-
                 case 1:
+                    List<Pelanggan> pelanggan = pelangganDAO.tampilkanSemua();
 
-                    for (Pelanggan p : daftarPelanggan) {
+                    if (pelanggan.isEmpty()) {
+                        System.out.println("Belum ada data pelanggan.");
+                    }
 
+                    for (Pelanggan p : pelanggan) {
                         System.out.println("ID Pelanggan: " + p.getIdPelanggan());
                         System.out.println("Nama: " + p.getNama());
                         System.out.println("No Telepon: " + p.getNoTelepon());
                         System.out.println("Alamat: " + p.getAlamat());
                         System.out.println();
                     }
-
                     break;
 
                 case 2:
+                    List<Barang> barang = barangDAO.tampilkanSemua();
 
-                    for (Barang b : daftarBarang) {
+                    if (barang.isEmpty()) {
+                        System.out.println("Belum ada data barang.");
+                    }
 
+                    for (Barang b : barang) {
                         System.out.println("ID Barang: " + b.getIdBarang());
                         System.out.println("Nama Barang: " + b.getNamaBarang());
                         System.out.println("Jenis Barang: " + b.getJenisBarang());
                         System.out.println("Berat: " + b.getBerat() + " ton");
                         System.out.println();
                     }
-
                     break;
 
                 case 3:
+                    List<Pengiriman> pengiriman =
+                            pengirimanDAO.tampilkanSemua();
 
-                    for (Pengiriman p : daftarPengiriman) {
+                    if (pengiriman.isEmpty()) {
+                        System.out.println("Belum ada data pengiriman.");
+                    }
 
+                    for (Pengiriman p : pengiriman) {
                         System.out.println("ID Pengiriman: " + p.getIdPengiriman());
                         System.out.println("ID Pelanggan: " + p.getIdPelanggan());
                         System.out.println("ID Barang: " + p.getIdBarang());
                         System.out.println("Kota Asal: " + p.getKotaAsal());
                         System.out.println("Kota Tujuan: " + p.getKotaTujuan());
-                        System.out.println("Status Pengiriman: " + p.getStatusPengiriman());
-
+                        System.out.println("Status: " + p.getStatusPengiriman());
                         p.tampilkanJenisPengiriman();
-
                         System.out.println();
                     }
-
                     break;
 
                 default:
                     System.out.println("Pilihan tidak tersedia.");
             }
 
-        } catch (Exception e) {
-
-            System.out.println("Input tidak valid!");
-            scanner.nextLine();
+        } catch (NumberFormatException e) {
+            System.out.println("Input harus berupa angka!");
+        } catch (SQLException e) {
+            System.out.println("Gagal mengambil data: " + e.getMessage());
         }
     }
 
     void ubahData() {
-
         menu.tampilkanMenuData();
 
         try {
-
             System.out.print("Pilih Data: ");
-            int pilihan = scanner.nextInt();
-            scanner.nextLine();
+            int pilihan = Integer.parseInt(scanner.nextLine());
 
-            if (pilihan == 1) {
+            switch (pilihan) {
+                case 1: {
+                    System.out.print("Masukkan ID Pelanggan: ");
+                    String id = scanner.nextLine();
 
-                System.out.print("Masukkan ID Pelanggan: ");
-                String id = scanner.nextLine();
+                    for (Pelanggan p : pelangganDAO.tampilkanSemua()) {
+                        if (p.getIdPelanggan().equals(id)) {
+                            System.out.print("Nama: ");
+                            p.setNama(scanner.nextLine());
 
-                for (Pelanggan p : daftarPelanggan) {
+                            System.out.print("No Telepon: ");
+                            p.setNoTelepon(scanner.nextLine());
 
-                    if (p.getIdPelanggan().equals(id)) {
+                            System.out.print("Alamat: ");
+                            p.setAlamat(scanner.nextLine());
 
-                        System.out.print("Nama: ");
-                        p.setNama(scanner.nextLine());
-
-                        System.out.print("No Telepon: ");
-                        p.setNoTelepon(scanner.nextLine());
-
-                        System.out.print("Alamat: ");
-                        p.setAlamat(scanner.nextLine());
-
-                        System.out.println("Data pelanggan berhasil diubah.");
-                        return;
-                    }
-                }
-
-            } else if (pilihan == 2) {
-
-                System.out.print("Masukkan ID Barang: ");
-                String id = scanner.nextLine();
-
-                for (Barang b : daftarBarang) {
-
-                    if (b.getIdBarang().equals(id)) {
-
-                        System.out.print("Nama Barang: ");
-                        b.setNamaBarang(scanner.nextLine());
-
-                        System.out.print("Jenis Barang: ");
-                        b.setJenisBarang(scanner.nextLine());
-
-                        System.out.print("Berat (ton): ");
-                        double berat = scanner.nextDouble();
-                        scanner.nextLine();
-
-                        if (berat <= 0) {
-                            System.out.println("Berat harus lebih dari 0!");
+                            if (pelangganDAO.ubah(p)) {
+                                System.out.println("Data pelanggan berhasil diubah.");
+                            }
                             return;
                         }
-
-                        b.setBerat(berat);
-
-                        System.out.println("Data barang berhasil diubah.");
-                        return;
                     }
+
+                    System.out.println("Data pelanggan tidak ditemukan.");
+                    break;
                 }
 
-            } else if (pilihan == 3) {
+                case 2: {
+                    System.out.print("Masukkan ID Barang: ");
+                    String id = scanner.nextLine();
 
-                System.out.print("Masukkan ID Pengiriman: ");
-                String id = scanner.nextLine();
+                    for (Barang b : barangDAO.tampilkanSemua()) {
+                        if (b.getIdBarang().equals(id)) {
+                            System.out.print("Nama Barang: ");
+                            b.setNamaBarang(scanner.nextLine());
 
-                for (Pengiriman p : daftarPengiriman) {
+                            System.out.print("Jenis Barang: ");
+                            b.setJenisBarang(scanner.nextLine());
 
-                    if (p.getIdPengiriman().equals(id)) {
+                            System.out.print("Berat (ton): ");
+                            double berat = Double.parseDouble(scanner.nextLine());
 
-                        System.out.print("Kota Asal: ");
-                        p.setKotaAsal(scanner.nextLine());
+                            if (berat <= 0) {
+                                System.out.println("Berat harus lebih dari 0!");
+                                return;
+                            }
 
-                        System.out.print("Kota Tujuan: ");
-                        p.setKotaTujuan(scanner.nextLine());
+                            b.setBerat(berat);
 
-                        System.out.print("Status Pengiriman: ");
-                        p.setStatusPengiriman(scanner.nextLine());
-
-                        System.out.println("Data pengiriman berhasil diubah.");
-                        return;
+                            if (barangDAO.ubah(b)) {
+                                System.out.println("Data barang berhasil diubah.");
+                            }
+                            return;
+                        }
                     }
+
+                    System.out.println("Data barang tidak ditemukan.");
+                    break;
                 }
 
-            } else {
+                case 3: {
+                    System.out.print("Masukkan ID Pengiriman: ");
+                    String id = scanner.nextLine();
 
-                System.out.println("Pilihan tidak tersedia.");
-                return;
+                    for (Pengiriman p : pengirimanDAO.tampilkanSemua()) {
+                        if (p.getIdPengiriman().equals(id)) {
+                            System.out.print("Kota Asal: ");
+                            p.setKotaAsal(scanner.nextLine());
+
+                            System.out.print("Kota Tujuan: ");
+                            p.setKotaTujuan(scanner.nextLine());
+
+                            System.out.print("Status Pengiriman: ");
+                            p.setStatusPengiriman(scanner.nextLine());
+
+                            if (pengirimanDAO.ubah(p)) {
+                                System.out.println("Data pengiriman berhasil diubah.");
+                            }
+                            return;
+                        }
+                    }
+
+                    System.out.println("Data pengiriman tidak ditemukan.");
+                    break;
+                }
+
+                default:
+                    System.out.println("Pilihan tidak tersedia.");
             }
 
-            System.out.println("Data tidak ditemukan.");
-
-        } catch (Exception e) {
-
-            System.out.println("Input tidak valid!");
-            scanner.nextLine();
+        } catch (NumberFormatException e) {
+            System.out.println("Input angka tidak valid!");
+        } catch (SQLException e) {
+            System.out.println("Gagal mengubah data: " + e.getMessage());
         }
     }
 
     void hapusData() {
-
         menu.tampilkanMenuData();
 
         try {
-
             System.out.print("Pilih Data: ");
-            int pilihan = scanner.nextInt();
-            scanner.nextLine();
+            int pilihan = Integer.parseInt(scanner.nextLine());
 
             System.out.print("Masukkan ID: ");
             String id = scanner.nextLine();
 
-            if (pilihan == 1) {
+            boolean berhasil;
 
-                for (int i = 0; i < daftarPelanggan.size(); i++) {
+            switch (pilihan) {
+                case 1:
+                    berhasil = pelangganDAO.hapus(id);
+                    break;
+                case 2:
+                    berhasil = barangDAO.hapus(id);
+                    break;
+                case 3:
+                    berhasil = pengirimanDAO.hapus(id);
+                    break;
+                default:
+                    System.out.println("Pilihan tidak tersedia.");
+                    return;
+            }
 
-                    if (daftarPelanggan.get(i).getIdPelanggan().equals(id)) {
-
-                        daftarPelanggan.remove(i);
-
-                        System.out.println("Data pelanggan berhasil dihapus.");
-                        return;
-                    }
-                }
-
-            } else if (pilihan == 2) {
-
-                for (int i = 0; i < daftarBarang.size(); i++) {
-
-                    if (daftarBarang.get(i).getIdBarang().equals(id)) {
-
-                        daftarBarang.remove(i);
-
-                        System.out.println("Data barang berhasil dihapus.");
-                        return;
-                    }
-                }
-
-            } else if (pilihan == 3) {
-
-                for (int i = 0; i < daftarPengiriman.size(); i++) {
-
-                    if (daftarPengiriman.get(i).getIdPengiriman().equals(id)) {
-
-                        daftarPengiriman.remove(i);
-
-                        System.out.println("Data pengiriman berhasil dihapus.");
-                        return;
-                    }
-                }
-
+            if (berhasil) {
+                System.out.println("Data berhasil dihapus.");
             } else {
-
-                System.out.println("Pilihan tidak tersedia.");
-                return;
+                System.out.println("Data tidak ditemukan.");
             }
 
-            System.out.println("Data tidak ditemukan.");
-
-        } catch (Exception e) {
-
-            System.out.println("Input tidak valid!");
-            scanner.nextLine();
+        } catch (NumberFormatException e) {
+            System.out.println("Input harus berupa angka!");
+        } catch (SQLException e) {
+            System.out.println(
+                    "Gagal menghapus data. Pastikan data tidak sedang "
+                    + "digunakan oleh pengiriman lain."
+            );
+            System.out.println("Detail: " + e.getMessage());
         }
-    }
-
-    boolean idPelangganSudahAda(String id) {
-
-        for (Pelanggan p : daftarPelanggan) {
-
-            if (p.getIdPelanggan().equals(id)) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    boolean barangSudahAda(String id) {
-
-        for (Barang b : daftarBarang) {
-
-            if (b.getIdBarang().equals(id)) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    boolean pengirimanSudahAda(String id) {
-
-        for (Pengiriman p : daftarPengiriman) {
-
-            if (p.getIdPengiriman().equals(id)) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    Pengiriman cariPengiriman(String idPengiriman) {
-
-        for (Pengiriman p : daftarPengiriman) {
-
-            if (p.getIdPengiriman().equals(idPengiriman)) {
-                return p;
-            }
-        }
-
-        return null;
-    }
-
-    Pengiriman cariPengiriman(String kotaAsal, String kotaTujuan) {
-
-        for (Pengiriman p : daftarPengiriman) {
-
-            if (p.getKotaAsal().equals(kotaAsal)
-                    && p.getKotaTujuan().equals(kotaTujuan)) {
-
-                return p;
-            }
-        }
-
-        return null;
     }
 }
